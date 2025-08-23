@@ -1,7 +1,31 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const HomePage = () => {
+  const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleMakeReservation = async () => {
+    setIsSubmitting(true);
+    
+    // Simulate navigation or API call
+    setTimeout(() => {
+      console.log('Navigate to reservations');
+      setIsSubmitting(false);
+    }, 2000);
+  };
+
+  const handleSignUp = () => {
+    navigate('/signup');
+    console.log('Navigate to sign up');
+  };
+
+  const handleLogin = () => {
+   navigate('/login');
+    console.log('Navigate to login');
+  };
+
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
         
@@ -16,17 +40,19 @@ const HomePage = () => {
                     alt="Winners Portal Logo" 
                     className="w-12 h-12 lg:w-16 lg:h-16 xl:w-18 xl:h-18 object-contain"
                 />
-                {/* <span className="text-lg lg:text-xl font-bold text-primary-700 hidden sm:block">
-                    Winners Portal
-                </span> */}
+                
             </div>
 
             {/* Navigation Buttons */}
             <div className="flex justify-end space-x-3 lg:space-x-7 lg:-mr-4 xl:-mr-20">
-              <button className="px-4 py-2 lg:px-6 lg:py-2.5 text-sm lg:text-base text-gray-700 hover:text-primary-600 font-medium border border-gray-300 rounded-lg hover:border-primary-300 transition-colors duration-200">
+              <button 
+              onClick={handleLogin}
+              className="px-4 py-2 lg:px-6 lg:py-2.5 text-sm lg:text-base text-gray-700 hover:text-primary-600 font-medium border border-gray-300 rounded-lg hover:border-primary-300 transition-colors duration-200">
                 Log in
               </button>
-              <button className="px-4 py-2 lg:px-6 lg:py-2.5 text-sm lg:text-base bg-accent-yellow hover:bg-yellow-500 text-gray-900 font-semibold rounded-lg transition-colors duration-200 shadow-sm">
+              <button 
+              onClick={handleSignUp}
+              className="px-4 py-2 lg:px-6 lg:py-2.5 text-sm lg:text-base bg-accent-yellow hover:bg-yellow-500 text-gray-900 font-semibold rounded-lg transition-colors duration-200 shadow-sm">
                 Sign Up
               </button>
             </div>
@@ -59,12 +85,23 @@ const HomePage = () => {
 
             {/* CTA Button */}
             <div className="mt-8 lg:mt-12">
-              <button className="group bg-accent-red hover:bg-red-600 text-white text-lg lg:text-xl font-semibold px-8 py-4 lg:px-12 lg:py-5 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl">
-                <span className="flex items-center justify-center space-x-2">
-                  <span>Make Reservations</span>
-                  <ArrowRight className="w-5 h-5 lg:w-6 lg:h-6 group-hover:translate-x-1 transition-transform duration-200" />
-                </span>
-              </button>
+              <button
+              type="button"
+              onClick={handleMakeReservation}
+              disabled={isSubmitting}
+              className={`group bg-accent-red hover:bg-red-600 text-white text-lg lg:text-xl font-semibold px-8 py-4 lg:px-12 lg:py-5 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl ${
+                isSubmitting
+                  ? 'bg-gray-400 cursor-not-allowed text-white'
+                  : 'bg-red-600 hover:bg-red-700 text-white'
+              }`}
+            >
+              <span className="flex items-center justify-center space-x-2">
+                <span>{isSubmitting ? 'Loading...' : 'Make Reservations'}</span>
+                {!isSubmitting && (
+                  <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform duration-200" />
+                )}
+              </span>
+            </button>
             </div>
           </div>
         </div>
