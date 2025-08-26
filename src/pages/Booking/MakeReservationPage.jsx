@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronDown, Calendar } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const MakeReservationPage = () => {
-  const [currentStep, setCurrentStep] = useState('booking');
+  const navigate = useNavigate();
+  const currentStep = 'booking';
   const [formData, setFormData] = useState({
     // Personal Info
     firstName: '',
@@ -34,22 +36,35 @@ const MakeReservationPage = () => {
     }));
   };
 
-  const handleNext = () => {
-    // Navigate to Choose Room page
-    console.log('Navigate to Choose Room page');
-  };
+ const handleNext = () => {
+  if (isFormValid()) {
+    navigate('/reservations/choose-room');
+  }
+};
 
   const handlePrevious = () => {
-    // Navigate back to previous page
-    console.log('Navigate back to previous page');
-  };
+  // Only navigate back if not on booking-info step
+  if (currentStep !== 'booking') {
+    navigate(-1); // Go back to previous page
+  }
+};
 
   const steps = [
-    { id: 'booking', name: 'Booking Info', active: true },
-    { id: 'room', name: 'Choose Room', active: false },
-    { id: 'confirmation', name: 'Confirmation', active: false },
-    { id: 'payment', name: 'Payment', active: false }
+  { id: 'booking', name: 'Booking Info', active: true, completed: false },
+  { id: 'room', name: 'Choose Room', active: false, completed: false },
+  { id: 'confirmation', name: 'Confirmation', active: false, completed: false },
+  { id: 'payment', name: 'Payment', active: false, completed: false }
+];
+
+const isFormValid = () => {
+  const requiredFields = [
+    'firstName', 'lastName', 'gender', 'phoneNumber', 
+    'townCity', 'country', 'adults', 'checkIn', 'checkOut',
+    'nextOfKinName', 'nextOfKinPhone', 'nextOfKinTownCity', 'nextOfKinCountry'
   ];
+  
+  return requiredFields.every(field => formData[field] && formData[field].trim() !== '');
+};
 
   return (
     <div className="min-h-screen">
@@ -390,6 +405,7 @@ const MakeReservationPage = () => {
           <div className="flex justify-between pt-6">
             <button
               onClick={handlePrevious}
+              disabled={currentStep === 'booking'}
               className="flex items-center space-x-2 px-6 py-3 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <ChevronLeft size={20} />
@@ -398,6 +414,7 @@ const MakeReservationPage = () => {
 
             <button
               onClick={handleNext}
+              disabled={!isFormValid()}
               className="flex items-center space-x-2 px-8 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold"
             >
               <span>Next</span>

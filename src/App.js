@@ -6,6 +6,7 @@ import CreateAccountPage from './pages/Auth/CreateAccountPage';
 import LoginPage from './pages/Auth/LoginPage';
 import './App.css';
 import MakeReservationPage from './pages/Booking/MakeReservationPage';
+import ChooseRoomPage from './pages/Booking/ChooseRoomPage';
 
 function App() {
   return (
@@ -29,6 +30,8 @@ function App() {
 
           {/*  */}
           <Route path="/reservations/booking-info" element={<MakeReservationPage />} />
+          
+          <Route path="/reservations/choose-room" element={<ChooseRoomPage />} />
 
           
         </Routes>
