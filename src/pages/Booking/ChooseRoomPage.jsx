@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 // Data ------------------------------------------------------------------
 const ROOMS = [
@@ -8,10 +9,10 @@ const ROOMS = [
   { id: 301, type: 'Exquisite Suite', price: 25000, capacity: 5, period: '/Night', images: ['/assets/images/301a.jpg','/assets/images/301b.jpg','/assets/images/301c.jpg'], description: 'Luxury suite featuring elegant decor and lounge area.', amenities: ['Free WiFi','Restaurant','Swimming Pool','Laundry','Easy Checkout'] },
   // duplicates for fuller grid
   { id: 102, type: 'Standard Suite', price: 6000, capacity: 2, period: '/Night', images: ['/assets/images/102a.jpg','/assets/images/102b.jpeg','/assets/images/102c.jpg','/assets/images/102d.jpg'], description: 'Comfort-focused standard suite.', amenities: ['Free WiFi','Laundry','Easy Checkout'] },
-  { id: 202, type: 'Executive Suite', price: 15000, capacity: 3, period: '/Night', images: ['/assets/images/202a.jpg','/assets/images/202b.jpg','/assets/images/202c.jpg','/assets/images/202d.jpg'], description: 'Executive comfort and style.', amenities: ['Free WiFi','Restaurant','Laundry'] },
+  { id: 202, type: 'Executive Suite', price: 15000, capacity: 3, period: '/Night', images: ['/assets/images/202a.jpg','/assets/images/202b.jpg','/assets/images/202c.jpeg','/assets/images/202d.jpg'], description: 'Executive comfort and style.', amenities: ['Free WiFi','Restaurant','Laundry'] },
   { id: 302, type: 'Exquisite Suite', price: 25000, capacity: 5, period: '/Night', images: ['/assets/images/302a.jpg','/assets/images/302b.jpg','/assets/images/302c.jpg','/assets/images/302d.jpg'], description: 'Premium comfort and luxury.', amenities: ['Restaurant','Swimming Pool','Laundry'] },
-  { id: 103, type: 'Standard Suite', price: 6000, capacity: 2, period: '/Night', images: ['/assets/images/103a.jpg','/assets/images/103b.jpg','/assets/images/103c.jpg','/assets/images/103d.jpg'], description: 'Serene, minimal, and comfortable.', amenities: ['Free WiFi','Easy Checkout'] },
-  { id: 203, type: 'Executive Suite', price: 15000, capacity: 3, period: '/Night', images: ['/assets/images/203a.jpg','/assets/images/203b.jpg','/assets/images/203c.jpg','/assets/images/203d.jpg'], description: 'Executive suite with workspace.', amenities: ['Free WiFi','Restaurant'] },
+  { id: 103, type: 'Standard Suite', price: 6000, capacity: 2, period: '/Night', images: ['/assets/images/103a.jpg','/assets/images/103b.jpeg','/assets/images/103c.jpeg','/assets/images/103d.jpeg'], description: 'Serene, minimal, and comfortable.', amenities: ['Free WiFi','Easy Checkout'] },
+  { id: 203, type: 'Executive Suite', price: 15000, capacity: 3, period: '/Night', images: ['/assets/images/203a.jpg','/assets/images/203b.jpeg','/assets/images/203c.jpeg','/assets/images/203d.jpeg'], description: 'Executive suite with workspace.', amenities: ['Free WiFi','Restaurant'] },
   { id: 303, type: 'Exquisite Suite', price: 25000, capacity: 5, period: '/Night', images: ['/assets/images/303a.jpg','/assets/images/303b.jpg','/assets/images/303c.jpg','/assets/images/303d.jpg'], description: 'Top-tier suite for distinguished guests.', amenities: ['Restaurant','Swimming Pool','Laundry'] }
 ];
 
@@ -28,6 +29,7 @@ const currencyFormat = (n) => `₦${n.toLocaleString()}`;
 
 // Component --------------------------------------------------------------
 const ChooseRoomPage = () => {
+  const navigate = useNavigate();
   const steps = [
     { id: 'booking', name: 'Booking Info', active: false, completed: true },
     { id: 'room', name: 'Choose Room', active: true, completed: false },
@@ -54,13 +56,18 @@ const ChooseRoomPage = () => {
 
   const handleBookNow = (roomId) => {
     setSelectedRoom(roomId);
-    // TODO: navigate to next step
-    console.log('Book room', roomId);
+    try { localStorage.setItem('reservation.selectedRoomId', String(roomId)); } catch {}
     setShowModal(false);
+    navigate('/reservations/confirmation');
   };
 
-  const handleNext = () => selectedRoom && console.log('Proceed with', selectedRoom);
-  const handlePrevious = () => console.log('Go to previous step');
+  const handleNext = () => {
+    if (selectedRoom) {
+      try { localStorage.setItem('reservation.selectedRoomId', String(selectedRoom)); } catch {}
+      navigate('/reservations/confirmation');
+    }
+  };
+  const handlePrevious = () => navigate('/reservations/booking-info');
 
   const closeModal = useCallback(() => setShowModal(false), []);
 

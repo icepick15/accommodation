@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth-clean';
 
 const LoginPage = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -22,12 +25,13 @@ const LoginPage = () => {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Login submitted:', formData);
+    try {
+      await login({ email: formData.email });
+      const dest = location.state?.from || '/reservations/booking-info';
+      navigate(dest, { replace: true });
+    } finally {
       setIsSubmitting(false);
-    }, 2000);
+    }
   };
 
   const handleSignUpRedirect = () => {

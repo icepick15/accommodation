@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronDown, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const MakeReservationPage = () => {
   const navigate = useNavigate();
   const currentStep = 'booking';
-  const [formData, setFormData] = useState({
+  const stored = (() => {
+    try { return JSON.parse(localStorage.getItem('reservation.bookingInfo')) || null; } catch { return null; }
+  })();
+  const [formData, setFormData] = useState(stored || {
     // Personal Info
     firstName: '',
     lastName: '',
@@ -28,6 +31,16 @@ const MakeReservationPage = () => {
     remark: ''
   });
 
+  const [touched, setTouched] = useState({});
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+  const formRef = useRef(null);
+
+  const requiredFields = [
+    'firstName', 'lastName', 'gender', 'phoneNumber',
+    'townCity', 'country', 'adults', 'checkIn', 'checkOut',
+    'nextOfKinName', 'nextOfKinPhone', 'nextOfKinTownCity', 'nextOfKinCountry'
+  ];
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -36,9 +49,30 @@ const MakeReservationPage = () => {
     }));
   };
 
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    setTouched(prev => ({ ...prev, [name]: true }));
+  };
+
+  const fieldError = (name) => {
+    if (!requiredFields.includes(name)) return '';
+    if (!formData[name] || formData[name].trim() === '') return 'Required';
+    if (name === 'checkOut' && formData.checkIn && formData.checkOut && formData.checkOut < formData.checkIn) return 'Must be after check in';
+    return '';
+  };
+
  const handleNext = () => {
+  setAttemptedSubmit(true);
   if (isFormValid()) {
+    // persist
+    localStorage.setItem('reservation.bookingInfo', JSON.stringify(formData));
     navigate('/reservations/choose-room');
+  } else {
+    // scroll to first error
+    setTimeout(() => {
+      const firstError = formRef.current?.querySelector('[data-error="true"]');
+      firstError && firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 0);
   }
 };
 
@@ -56,15 +90,15 @@ const MakeReservationPage = () => {
   { id: 'payment', name: 'Payment', active: false, completed: false }
 ];
 
-const isFormValid = () => {
-  const requiredFields = [
-    'firstName', 'lastName', 'gender', 'phoneNumber', 
-    'townCity', 'country', 'adults', 'checkIn', 'checkOut',
-    'nextOfKinName', 'nextOfKinPhone', 'nextOfKinTownCity', 'nextOfKinCountry'
-  ];
-  
-  return requiredFields.every(field => formData[field] && formData[field].trim() !== '');
-};
+const isFormValid = () => requiredFields.every(f => fieldError(f) === '');
+
+  // auto-persist on change (debounced minimal via effect)
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      try { localStorage.setItem('reservation.bookingInfo', JSON.stringify(formData)); } catch {}
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [formData]);
 
   return (
     <div className="min-h-screen">
@@ -121,7 +155,7 @@ const isFormValid = () => {
       </div>
 
       {/* Form Content */}
-      <div className="max-w-6xl mx-auto px-8 py-8">
+      <div className="max-w-6xl mx-auto px-8 py-8" ref={formRef}>
         <div className="bg-white rounded-lg shadow-sm p-8">
           {/* Personal Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -135,9 +169,15 @@ const isFormValid = () => {
                 name="firstName"
                 value={formData.firstName}
                 onChange={handleInputChange}
+                onBlur={handleBlur}
                 placeholder="First name"
-                className="w-full px-4 py-3 border bg-red-50 border-red-600 rounded-lg outline-none transition-colors focus:border-red-500 focus:bg-red-100 hover:border-red-400 focus:ring-red-200"
+                aria-invalid={!!fieldError('firstName')}
+                data-error={!!fieldError('firstName') && (touched.firstName || attemptedSubmit)}
+                className={`w-full px-4 py-3 border rounded-lg outline-none transition-colors focus:ring-2 focus:ring-red-300 focus:border-red-500 bg-red-50 ${fieldError('firstName') && (touched.firstName || attemptedSubmit) ? 'border-red-600' : 'border-red-300'}`}
               />
+              {fieldError('firstName') && (touched.firstName || attemptedSubmit) && (
+                <p className="mt-1 text-xs text-red-600">{fieldError('firstName')}</p>
+              )}
             </div>
 
             {/* Last Name */}
@@ -145,14 +185,8 @@ const isFormValid = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Last name
               </label>
-              <input
-                type="text"
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleInputChange}
-                placeholder="Last name"
-                className="w-full px-4 py-3 border bg-red-50 border-red-600 rounded-lg outline-none transition-colors focus:border-red-500 focus:bg-red-100 hover:border-red-400 focus:ring-red-200"
-              />
+              <input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} onBlur={handleBlur} placeholder="Last name" aria-invalid={!!fieldError('lastName')} data-error={!!fieldError('lastName') && (touched.lastName || attemptedSubmit)} className={`w-full px-4 py-3 border rounded-lg outline-none transition-colors focus:ring-2 focus:ring-red-300 focus:border-red-500 bg-red-50 ${fieldError('lastName') && (touched.lastName || attemptedSubmit) ? 'border-red-600' : 'border-red-300'}`} />
+              {fieldError('lastName') && (touched.lastName || attemptedSubmit) && (<p className="mt-1 text-xs text-red-600">{fieldError('lastName')}</p>)}
             </div>
 
             {/* Gender */}
@@ -161,18 +195,14 @@ const isFormValid = () => {
                 Gender
               </label>
               <div className="relative">
-                <select
-                  name="gender"
-                  value={formData.gender}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border bg-red-50 border-red-600 rounded-lg outline-none transition-colors focus:border-red-500 focus:bg-red-100 hover:border-red-400 focus:ring-red-200"
-                >
+                <select name="gender" value={formData.gender} onChange={handleInputChange} onBlur={handleBlur} aria-invalid={!!fieldError('gender')} data-error={!!fieldError('gender') && (touched.gender || attemptedSubmit)} className={`w-full px-4 py-3 border rounded-lg outline-none transition-colors focus:ring-2 focus:ring-red-300 focus:border-red-500 bg-red-50 ${fieldError('gender') && (touched.gender || attemptedSubmit) ? 'border-red-600' : 'border-red-300'}`}>
                   <option value="">Male or Female</option>
                   <option value="male">Male</option>
                   <option value="female">Female</option>
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
               </div>
+              {fieldError('gender') && (touched.gender || attemptedSubmit) && (<p className="mt-1 text-xs text-red-600">{fieldError('gender')}</p>)}
             </div>
 
             {/* Phone Number */}
@@ -189,15 +219,9 @@ const isFormValid = () => {
                   placeholder="+234"
                   className="w-20 px-3 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
                 />
-                <input
-                  type="tel"
-                  name="phoneNumber"
-                  value={formData.phoneNumber}
-                  onChange={handleInputChange}
-                  placeholder="(239) 555-0108"
-                  className="w-full px-4 py-3 border bg-red-50 border-red-600 rounded-lg outline-none transition-colors focus:border-red-500 focus:bg-red-100 hover:border-red-400 focus:ring-red-200"
-                />
+                <input type="tel" name="phoneNumber" value={formData.phoneNumber} onChange={handleInputChange} onBlur={handleBlur} placeholder="(239) 555-0108" aria-invalid={!!fieldError('phoneNumber')} data-error={!!fieldError('phoneNumber') && (touched.phoneNumber || attemptedSubmit)} className={`w-full px-4 py-3 border rounded-lg outline-none transition-colors focus:ring-2 focus:ring-red-300 focus:border-red-500 bg-red-50 ${fieldError('phoneNumber') && (touched.phoneNumber || attemptedSubmit) ? 'border-red-600' : 'border-red-300'}`} />
               </div>
+              {fieldError('phoneNumber') && (touched.phoneNumber || attemptedSubmit) && (<p className="mt-1 text-xs text-red-600">{fieldError('phoneNumber')}</p>)}
             </div>
 
             {/* Town/City */}
@@ -205,14 +229,8 @@ const isFormValid = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Town/City
               </label>
-              <input
-                type="text"
-                name="townCity"
-                value={formData.townCity}
-                onChange={handleInputChange}
-                placeholder="Town"
-                className="w-full px-4 py-3 border bg-red-50 border-red-600 rounded-lg outline-none transition-colors focus:border-red-500 focus:bg-red-100 hover:border-red-400 focus:ring-red-200"
-              />
+              <input type="text" name="townCity" value={formData.townCity} onChange={handleInputChange} onBlur={handleBlur} placeholder="Town" aria-invalid={!!fieldError('townCity')} data-error={!!fieldError('townCity') && (touched.townCity || attemptedSubmit)} className={`w-full px-4 py-3 border rounded-lg outline-none transition-colors focus:ring-2 focus:ring-red-300 focus:border-red-500 bg-red-50 ${fieldError('townCity') && (touched.townCity || attemptedSubmit) ? 'border-red-600' : 'border-red-300'}`} />
+              {fieldError('townCity') && (touched.townCity || attemptedSubmit) && (<p className="mt-1 text-xs text-red-600">{fieldError('townCity')}</p>)}
             </div>
 
             {/* Country */}
@@ -220,14 +238,8 @@ const isFormValid = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Country
               </label>
-              <input
-                type="text"
-                name="country"
-                value={formData.country}
-                onChange={handleInputChange}
-                placeholder="Country"
-                className="w-full px-4 py-3 border bg-red-50 border-red-600 rounded-lg outline-none transition-colors focus:border-red-500 focus:bg-red-100 hover:border-red-400 focus:ring-red-200"
-              />
+              <input type="text" name="country" value={formData.country} onChange={handleInputChange} onBlur={handleBlur} placeholder="Country" aria-invalid={!!fieldError('country')} data-error={!!fieldError('country') && (touched.country || attemptedSubmit)} className={`w-full px-4 py-3 border rounded-lg outline-none transition-colors focus:ring-2 focus:ring-red-300 focus:border-red-500 bg-red-50 ${fieldError('country') && (touched.country || attemptedSubmit) ? 'border-red-600' : 'border-red-300'}`} />
+              {fieldError('country') && (touched.country || attemptedSubmit) && (<p className="mt-1 text-xs text-red-600">{fieldError('country')}</p>)}
             </div>
 
             {/* Adults */}
@@ -236,12 +248,7 @@ const isFormValid = () => {
                 Adults
               </label>
               <div className="relative">
-                <select
-                  name="adults"
-                  value={formData.adults}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border bg-red-50 border-red-600 rounded-lg outline-none transition-colors focus:border-red-500 focus:bg-red-100 hover:border-red-400 focus:ring-red-200"
-                >
+                <select name="adults" value={formData.adults} onChange={handleInputChange} onBlur={handleBlur} aria-invalid={!!fieldError('adults')} data-error={!!fieldError('adults') && (touched.adults || attemptedSubmit)} className={`w-full px-4 py-3 border rounded-lg outline-none transition-colors focus:ring-2 focus:ring-red-300 focus:border-red-500 bg-red-50 ${fieldError('adults') && (touched.adults || attemptedSubmit) ? 'border-red-600' : 'border-red-300'}`}>
                   <option value="">Select</option>
                   <option value="1">1 Adult</option>
                   <option value="2">2 Adults</option>
@@ -250,6 +257,7 @@ const isFormValid = () => {
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
               </div>
+              {fieldError('adults') && (touched.adults || attemptedSubmit) && (<p className="mt-1 text-xs text-red-600">{fieldError('adults')}</p>)}
             </div>
 
             {/* Children */}
@@ -258,12 +266,7 @@ const isFormValid = () => {
                 Children
               </label>
               <div className="relative">
-                <select
-                  name="children"
-                  value={formData.children}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border bg-red-50 border-red-600 rounded-lg outline-none transition-colors focus:border-red-500 focus:bg-red-100 hover:border-red-400 focus:ring-red-200"
-                >
+                <select name="children" value={formData.children} onChange={handleInputChange} className="w-full px-4 py-3 border rounded-lg outline-none transition-colors focus:ring-2 focus:ring-red-200 focus:border-red-500 bg-red-50 border-red-300">
                   <option value="">Select</option>
                   <option value="0">0 Children</option>
                   <option value="1">1 Child</option>
@@ -280,15 +283,10 @@ const isFormValid = () => {
                 Check in
               </label>
               <div className="relative">
-                <input
-                  type="date"
-                  name="checkIn"
-                  value={formData.checkIn}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border bg-red-50 border-red-600 rounded-lg outline-none transition-colors focus:border-red-500 focus:bg-red-100 hover:border-red-400 focus:ring-red-200"
-                />
+                <input type="date" name="checkIn" value={formData.checkIn} onChange={handleInputChange} onBlur={handleBlur} aria-invalid={!!fieldError('checkIn')} data-error={!!fieldError('checkIn') && (touched.checkIn || attemptedSubmit)} className={`w-full px-4 py-3 border rounded-lg outline-none transition-colors focus:ring-2 focus:ring-red-300 focus:border-red-500 bg-red-50 ${fieldError('checkIn') && (touched.checkIn || attemptedSubmit) ? 'border-red-600' : 'border-red-300'}`} />
                 <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-red-600 pointer-events-none" />
               </div>
+              {fieldError('checkIn') && (touched.checkIn || attemptedSubmit) && (<p className="mt-1 text-xs text-red-600">{fieldError('checkIn')}</p>)}
             </div>
 
             {/* Check Out */}
@@ -297,15 +295,10 @@ const isFormValid = () => {
                 Check out
               </label>
               <div className="relative">
-                <input
-                  type="date"
-                  name="checkOut"
-                  value={formData.checkOut}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border bg-red-50 border-red-600 rounded-lg outline-none transition-colors focus:border-red-500 focus:bg-red-100 hover:border-red-400 focus:ring-red-200"
-                />
+                <input type="date" name="checkOut" value={formData.checkOut} min={formData.checkIn || undefined} onChange={handleInputChange} onBlur={handleBlur} aria-invalid={!!fieldError('checkOut')} data-error={!!fieldError('checkOut') && (touched.checkOut || attemptedSubmit)} className={`w-full px-4 py-3 border rounded-lg outline-none transition-colors focus:ring-2 focus:ring-red-300 focus:border-red-500 bg-red-50 ${fieldError('checkOut') && (touched.checkOut || attemptedSubmit) ? 'border-red-600' : 'border-red-300'}`} />
                 <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-red-600 pointer-events-none" />
               </div>
+              {fieldError('checkOut') && (touched.checkOut || attemptedSubmit) && (<p className="mt-1 text-xs text-red-600">{fieldError('checkOut')}</p>)}
             </div>
           </div>
 
@@ -343,14 +336,7 @@ const isFormValid = () => {
                     placeholder="+234"
                     className="w-20 px-3 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
                   />
-                  <input
-                    type="tel"
-                    name="nextOfKinPhone"
-                    value={formData.nextOfKinPhone}
-                    onChange={handleInputChange}
-                    placeholder="(801) 122-3344"
-                    className="w-full px-4 py-3 border bg-red-50 border-red-600 rounded-lg outline-none transition-colors focus:border-red-500 focus:bg-red-100 hover:border-red-400 focus:ring-red-200"
-                  />
+                  <input type="tel" name="nextOfKinPhone" value={formData.nextOfKinPhone} onChange={handleInputChange} onBlur={handleBlur} placeholder="(801) 122-3344" aria-invalid={!!fieldError('nextOfKinPhone')} data-error={!!fieldError('nextOfKinPhone') && (touched.nextOfKinPhone || attemptedSubmit)} className={`w-full px-4 py-3 border rounded-lg outline-none transition-colors focus:ring-2 focus:ring-red-300 focus:border-red-500 bg-red-50 ${fieldError('nextOfKinPhone') && (touched.nextOfKinPhone || attemptedSubmit) ? 'border-red-600' : 'border-red-300'}`} />
                 </div>
               </div>
 
@@ -359,14 +345,7 @@ const isFormValid = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Town/City
                 </label>
-                <input
-                  type="text"
-                  name="nextOfKinTownCity"
-                  value={formData.nextOfKinTownCity}
-                  onChange={handleInputChange}
-                  placeholder="Town"
-                  className="w-full px-4 py-3 border bg-red-50 border-red-600 rounded-lg outline-none transition-colors focus:border-red-500 focus:bg-red-100 hover:border-red-400 focus:ring-red-200"
-                />
+                <input type="text" name="nextOfKinTownCity" value={formData.nextOfKinTownCity} onChange={handleInputChange} onBlur={handleBlur} placeholder="Town" aria-invalid={!!fieldError('nextOfKinTownCity')} data-error={!!fieldError('nextOfKinTownCity') && (touched.nextOfKinTownCity || attemptedSubmit)} className={`w-full px-4 py-3 border rounded-lg outline-none transition-colors focus:ring-2 focus:ring-red-300 focus:border-red-500 bg-red-50 ${fieldError('nextOfKinTownCity') && (touched.nextOfKinTownCity || attemptedSubmit) ? 'border-red-600' : 'border-red-300'}`} />
               </div>
 
               {/* Next of Kin Country */}
@@ -374,14 +353,7 @@ const isFormValid = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Country
                 </label>
-                <input
-                  type="text"
-                  name="nextOfKinCountry"
-                  value={formData.nextOfKinCountry}
-                  onChange={handleInputChange}
-                  placeholder="Country"
-                  className="w-full px-4 py-3 border bg-red-50 border-red-600 rounded-lg outline-none transition-colors focus:border-red-500 focus:bg-red-100 hover:border-red-400 focus:ring-red-200"
-                />
+                <input type="text" name="nextOfKinCountry" value={formData.nextOfKinCountry} onChange={handleInputChange} onBlur={handleBlur} placeholder="Country" aria-invalid={!!fieldError('nextOfKinCountry')} data-error={!!fieldError('nextOfKinCountry') && (touched.nextOfKinCountry || attemptedSubmit)} className={`w-full px-4 py-3 border rounded-lg outline-none transition-colors focus:ring-2 focus:ring-red-300 focus:border-red-500 bg-red-50 ${fieldError('nextOfKinCountry') && (touched.nextOfKinCountry || attemptedSubmit) ? 'border-red-600' : 'border-red-300'}`} />
               </div>
             </div>
 
@@ -390,34 +362,18 @@ const isFormValid = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Remark
               </label>
-              <textarea
-                name="remark"
-                value={formData.remark}
-                onChange={handleInputChange}
-                rows={4}
-                className="w-full px-4 py-3 border bg-red-50 border-red-600 rounded-lg outline-none transition-colors focus:border-red-500 focus:bg-red-100 hover:border-red-400 focus:ring-red-200 resize-none"
-                placeholder="Additional information or special requests..."
-              />
+              <textarea name="remark" value={formData.remark} onChange={handleInputChange} rows={4} className="w-full px-4 py-3 border rounded-lg outline-none transition-colors focus:ring-2 focus:ring-red-300 focus:border-red-500 bg-red-50 border-red-300 resize-none" placeholder="Additional information or special requests..." />
             </div>
           </div>
 
           {/* Navigation Buttons */}
           <div className="flex justify-between pt-6">
-            <button
-              onClick={handlePrevious}
-              disabled={currentStep === 'booking'}
-              className="flex items-center space-x-2 px-6 py-3 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
+            <button onClick={handlePrevious} disabled={currentStep === 'booking'} className={`flex items-center space-x-2 px-6 py-3 rounded-lg transition-colors border ${currentStep === 'booking' ? 'text-gray-400 border-gray-200 cursor-not-allowed bg-gray-50' : 'text-gray-600 border-gray-300 hover:bg-gray-50'}`}>            
               <ChevronLeft size={20} />
               <span>Previous</span>
             </button>
-
-            <button
-              onClick={handleNext}
-              disabled={!isFormValid()}
-              className="flex items-center space-x-2 px-8 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold"
-            >
-              <span>Next</span>
+            <button onClick={handleNext} disabled={!isFormValid()} className={`flex items-center space-x-2 px-8 py-3 rounded-lg font-semibold transition-colors ${isFormValid() ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-red-300 text-white cursor-not-allowed'}`}>
+              <span>{isFormValid() ? 'Next' : 'Fill Required Fields'}</span>
             </button>
           </div>
         </div>

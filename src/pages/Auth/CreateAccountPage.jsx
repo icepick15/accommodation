@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth-clean';
 
 const CreateAccountPage = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     userId: '',
     firstName: '',
@@ -38,12 +40,13 @@ const CreateAccountPage = () => {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Form submitted:', formData);
+    try {
+      // Pretend account created then auto-login
+      await login({ email: formData.email, name: formData.firstName });
+      navigate('/reservations/booking-info');
+    } finally {
       setIsSubmitting(false);
-    }, 2000);
+    }
   };
 
   const handleLoginRedirect = () => {
