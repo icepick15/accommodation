@@ -142,27 +142,45 @@ const PaymentPage = () => {
 			<main className="max-w-6xl mx-auto px-6 md:px-8 py-8" ref={formRef}>
 				<form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-6 md:p-8" noValidate>
 					{/* Booking Recap Fields */}
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+					<div className="space-y-6 mb-8">
+						{/* Room Code - Full Width */}
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">Room Code</label>
 							<input value={roomCode} readOnly placeholder="Room Code" className="w-full px-4 py-3 border rounded-lg bg-red-50 border-red-300 text-gray-700" />
 						</div>
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">Check in</label>
-							<input value={booking.checkIn || ''} readOnly className="w-full px-4 py-3 border rounded-lg bg-red-50 border-red-300 text-gray-700" />
+						
+						{/* Check in/out - Side by side with calendar inputs */}
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">Check in</label>
+								<input 
+									type="date" 
+									value={booking.checkIn || ''} 
+									readOnly 
+									className="w-full px-4 py-3 border rounded-lg bg-red-50 border-red-300 text-gray-700" 
+								/>
+							</div>
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">Check out</label>
+								<input 
+									type="date" 
+									value={booking.checkOut || ''} 
+									readOnly 
+									className="w-full px-4 py-3 border rounded-lg bg-red-50 border-red-300 text-gray-700" 
+								/>
+							</div>
 						</div>
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">Check out</label>
-							<input value={booking.checkOut || ''} readOnly className="w-full px-4 py-3 border rounded-lg bg-red-50 border-red-300 text-gray-700" />
-						</div>
-						<div className="hidden md:block" />
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">First name</label>
-							<input value={booking.firstName || ''} readOnly className="w-full px-4 py-3 border rounded-lg bg-red-50 border-red-300 text-gray-700" />
-						</div>
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">Last name</label>
-							<input value={booking.lastName || ''} readOnly className="w-full px-4 py-3 border rounded-lg bg-red-50 border-red-300 text-gray-700" />
+						
+						{/* Names - Side by side */}
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">First name</label>
+								<input value={booking.firstName || ''} readOnly className="w-full px-4 py-3 border rounded-lg bg-red-50 border-red-300 text-gray-700" />
+							</div>
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">Last name</label>
+								<input value={booking.lastName || ''} readOnly className="w-full px-4 py-3 border rounded-lg bg-red-50 border-red-300 text-gray-700" />
+							</div>
 						</div>
 					</div>
 

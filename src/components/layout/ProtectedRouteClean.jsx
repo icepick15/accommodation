@@ -2,6 +2,9 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth-clean';
 
+// Developer mode - set to true to bypass all protections during development
+const DEVELOPER_MODE = true;
+
 // Keys / helpers
 const K_BOOKING = 'reservation.bookingInfo';
 const K_ROOM = 'reservation.selectedRoomId';
@@ -16,8 +19,15 @@ const firstIncomplete = () => { if (!hasBooking()) return '/reservations/booking
 
 // stage: booking | room | confirmation | payment
 const ProtectedRoute = ({ children, stage }) => {
+  // Always call hooks first (React requirement)
   const { isAuthenticated, loading } = useAuth();
   const location = useLocation();
+  
+  // Developer mode bypass - remove this when ready for production
+  if (DEVELOPER_MODE) {
+    return children;
+  }
+
   if (loading) return <div className="p-8 text-gray-500">Loading...</div>;
   if (!isAuthenticated) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   if (stage === 'booking') return children;
